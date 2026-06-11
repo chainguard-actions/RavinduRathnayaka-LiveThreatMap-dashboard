@@ -1,0 +1,79 @@
+name: 'Live Threat Map Generator'
+description: 'Generates and commits a dynamic SVG threat map using real-time data from Shodan.'
+author: 'RavinduRathnayaka'
+inputs:
+  SHODAN_API_KEY:
+    description: 'Your Shodan API key. This is required.'
+    required: true
+  GITHUB_TOKEN:
+    description: 'The GITHUB_TOKEN secret. Used for committing the generated file.'
+    required: false
+    default: ${{ github.token }}
+  COMMIT_MSG:
+    description: 'The commit message to use when updating the map.'
+    required: false
+    default: 'Chore: Update live threat map'
+  OUTPUT_FILE:
+    description: 'The path where the generated SVG map will be saved.'
+    required: false
+    default: 'threat-map.svg'
+  MAP_FILE:
+    description: 'The path to your custom background map.svg file.'
+    required: false
+    default: 'map.svg'
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: '3.10'
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        pip install requests shodan
+    - name: Run threat map generator script
+      shell: bash
+      # Use github.action_path to find the script within the action's repository
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        SHODAN_API_KEY: ${{ inputs.SHODAN_API_KEY }}
+        OUTPUT_SVG_FILENAME: ${{ inputs.OUTPUT_FILE }}
+      run: python "$ACTION_PATH/generate_threat_map.py"
+    - name: Commit and push the updated map
+      shell: bash
+      env:
+        OUTPUT_FILE: ${{ inputs.OUTPUT_FILE }}
+        MAP_FILE: ${{ inputs.MAP_FILE }}
+        COMMIT_MSG: ${{ inputs.COMMIT_MSG }}
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add "$OUTPUT_FILE"
+        if [ -f "$MAP_FILE" ]; then git add "$MAP_FILE"; fi
+
+        # Commit only if there are changes
+        if ! git diff --staged --quiet; then
+          git commit -m "$COMMIT_MSG"
+          git pull --rebase
+          git push
+        else
+          echo "No changes to the map, skipping commit."
+        fi
