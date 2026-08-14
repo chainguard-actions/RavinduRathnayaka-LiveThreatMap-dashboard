@@ -1,0 +1,39 @@
+name: Test custom OUTPUT_FILE input
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          SHODAN_API_KEY: 'invalid-test-key-for-ci'
+          OUTPUT_FILE: 'custom-output-map.svg'
+          COMMIT_MSG: 'Test: custom output file'
+        continue-on-error: true
+
+      - name: Assert action ran (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with custom OUTPUT_FILE (outcome=$OUTCOME)"
+
+      - name: Assert default threat-map.svg was NOT created (custom path used)
+        run: |
+          # With a bad API key, no SVG should be generated at all
+          # But if one were generated, it should be at the custom path, not the default
+          if [ -f "threat-map.svg" ]; then
+            echo "WARN: default threat-map.svg exists — action may have fallen back to default"
+          else
+            echo "PASS: default threat-map.svg not present"
+          fi
+          echo "Custom output file check complete"

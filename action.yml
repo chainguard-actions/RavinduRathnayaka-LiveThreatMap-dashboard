@@ -51,7 +51,7 @@ runs:
         pip install requests shodan
     - name: Run threat map generator script
       shell: bash
-      # Use github.action_path to find the script within the action's repository
+      # Use ACTION_PATH to find the script within the action's repository
       env:
         ACTION_PATH: ${{ github.action_path }}
         SHODAN_API_KEY: ${{ inputs.SHODAN_API_KEY }}

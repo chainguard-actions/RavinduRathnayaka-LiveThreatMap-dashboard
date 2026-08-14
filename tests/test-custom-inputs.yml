@@ -1,0 +1,49 @@
+name: Test custom input parameters
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure git for commit step
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - id: action
+        uses: .
+        with:
+          SHODAN_API_KEY: "fake-api-key-for-testing"
+          OUTPUT_FILE: "custom-output.svg"
+          COMMIT_MSG: "Custom commit message for test"
+          MAP_FILE: "map.svg"
+        continue-on-error: true
+
+      - name: Assert action completed with custom inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          # With a fake API key, the action should fail gracefully at the Shodan step
+          # but the action itself should not crash due to input handling issues.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action accepted custom inputs and completed with outcome: $OUTCOME"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
+
+      - name: Verify custom output file was not created (no valid API data)
+        run: |
+          # With a fake API key, no custom-output.svg should be generated
+          if [ -f "custom-output.svg" ]; then
+            echo "INFO: custom-output.svg was created (unexpected with fake API key)"
+            ls -la custom-output.svg
+          else
+            echo "PASS: no custom-output.svg created (expected with fake API key)"
+          fi

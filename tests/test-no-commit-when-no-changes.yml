@@ -1,0 +1,49 @@
+name: Test no commit when no changes detected
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Pre-create the output file so git sees it as unchanged
+      - name: Pre-create output file to simulate no-change scenario
+        run: |
+          echo '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100"/></svg>' > threat-map.svg
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add threat-map.svg
+          git commit -m "chore: add initial threat-map.svg for test"
+
+      - id: action
+        uses: .
+        with:
+          SHODAN_API_KEY: 'invalid-test-key-for-ci'
+          OUTPUT_FILE: 'threat-map.svg'
+          COMMIT_MSG: 'Test: should not commit'
+        continue-on-error: true
+
+      - name: Assert action ran (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran (outcome=$OUTCOME)"
+
+      - name: Assert git log shows no extra commit from the action
+        run: |
+          LAST_MSG=$(git log -1 --pretty=%s)
+          echo "Last commit message: $LAST_MSG"
+          # The action should NOT have committed because no SVG was generated
+          # (bad API key → no threats → no file written → no staged changes)
+          if [ "$LAST_MSG" = "Test: should not commit" ]; then
+            echo "FAIL: action committed when it should not have"
+            exit 1
+          fi
+          echo "PASS: no unexpected commit from action (last commit: $LAST_MSG)"
