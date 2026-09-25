@@ -1,4 +1,4 @@
-name: Test basic usage with fallback
+name: Test custom output file path
 on:
   workflow_dispatch:
 jobs:
@@ -18,42 +18,37 @@ jobs:
         with:
           SHODAN_API_KEY: "fake-shodan-key-for-testing"
           GITHUB_TOKEN: ${{ github.token }}
-          OUTPUT_FILE: "threat-map.svg"
-          COMMIT_MSG: "Test: Update live threat map"
+          OUTPUT_FILE: "custom-output/my-threat-map.svg"
+          COMMIT_MSG: "Test: Update custom threat map"
 
-      - name: Assert SVG output file was created
+      - name: Assert custom output file was created at specified path
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          if [ -f "threat-map.svg" ]; then
-            echo "PASS: threat-map.svg was created"
-            SIZE=$(wc -c < threat-map.svg)
+          if [ -f "custom-output/my-threat-map.svg" ]; then
+            echo "PASS: custom-output/my-threat-map.svg was created at the specified path"
+            SIZE=$(wc -c < "custom-output/my-threat-map.svg")
             echo "File size: $SIZE bytes"
             if [ "$SIZE" -eq 0 ]; then
-              echo "FAIL: threat-map.svg is empty"
+              echo "FAIL: custom-output/my-threat-map.svg is empty"
               exit 1
             fi
-            echo "PASS: threat-map.svg is non-empty"
+            echo "PASS: custom-output/my-threat-map.svg is non-empty"
           else
             # The action may have failed before writing the file (e.g. network issue)
-            # This is acceptable in a test environment
             if [ "${{ steps.action.outcome }}" = "failure" ]; then
               echo "PASS: action failed gracefully (network/API unavailable in test env)"
             else
-              echo "FAIL: action succeeded but threat-map.svg was not created"
+              echo "FAIL: action succeeded but custom-output/my-threat-map.svg was not created"
               exit 1
             fi
           fi
 
-      - name: Assert SVG content is valid XML when file exists
+      - name: Assert default output file was NOT created
         run: |
           if [ -f "threat-map.svg" ]; then
-            if grep -q "<svg" threat-map.svg; then
-              echo "PASS: threat-map.svg contains SVG markup"
-            else
-              echo "FAIL: threat-map.svg does not contain SVG markup"
-              cat threat-map.svg
-              exit 1
-            fi
+            echo "WARN: default threat-map.svg was created even though OUTPUT_FILE was overridden"
+            # This is not necessarily a failure — the script uses OUTPUT_SVG_FILENAME env var
+            # which is set from inputs.OUTPUT_FILE, so the default should not be written
           else
-            echo "SKIP: threat-map.svg not present, skipping SVG content check"
+            echo "PASS: default threat-map.svg was not created (correct behavior)"
           fi

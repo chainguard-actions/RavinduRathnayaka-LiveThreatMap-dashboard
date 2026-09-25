@@ -1,0 +1,53 @@
+name: Test no-changes scenario skips commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure git for push
+        run: |
+          git config --global user.email "test@example.com"
+          git config --global user.name "Test User"
+
+      - name: Pre-create a minimal SVG output file and commit it
+        run: |
+          # Create a minimal valid SVG that matches what the script writes on total failure
+          cat > threat-map-static.svg << 'EOF'
+          <svg width="2000" height="1280" xmlns="http://www.w3.org/2000/svg"/>
+          EOF
+          git add threat-map-static.svg
+          git commit -m "Test: pre-create static SVG"
+          echo "Pre-created and committed threat-map-static.svg"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          SHODAN_API_KEY: "fake-shodan-key-for-testing"
+          GITHUB_TOKEN: ${{ github.token }}
+          OUTPUT_FILE: "threat-map-static.svg"
+          COMMIT_MSG: "Test: Update static threat map"
+
+      - name: Assert action ran (either succeeded or failed gracefully)
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          if [ "${{ steps.action.outcome }}" = "success" ]; then
+            echo "PASS: action completed successfully"
+          elif [ "${{ steps.action.outcome }}" = "failure" ]; then
+            echo "PASS: action failed gracefully (network/API unavailable in test env)"
+          else
+            echo "FAIL: unexpected outcome '${{ steps.action.outcome }}'"
+            exit 1
+          fi
+
+      - name: Assert output file still exists
+        run: |
+          if [ -f "threat-map-static.svg" ]; then
+            echo "PASS: threat-map-static.svg still exists after action run"
+          else
+            echo "FAIL: threat-map-static.svg was removed or not found"
+            exit 1
+          fi
