@@ -42,7 +42,7 @@ runs:
           -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Set up Python
-      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      uses: chainguard-actions/actions-setup-python@ace3254bb5011efbd0650a7120a0441ebd1f9400 # v5
       with:
         python-version: '3.10'
     - name: Install Python dependencies
@@ -51,7 +51,7 @@ runs:
         pip install requests shodan
     - name: Run threat map generator script
       shell: bash
-      # Use ACTION_PATH to find the script within the action's repository
+      # Use github.action_path to find the script within the action's repository
       env:
         ACTION_PATH: ${{ github.action_path }}
         SHODAN_API_KEY: ${{ inputs.SHODAN_API_KEY }}
