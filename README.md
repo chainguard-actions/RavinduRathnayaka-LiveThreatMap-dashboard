@@ -6,10 +6,10 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| LiveThreatMap-2 | [`LiveThreatMap-2`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/tree/LiveThreatMap-2) | [`77e9cf3`](https://github.com/RavinduRathnayaka/LiveThreatMap-dashboard/commit/77e9cf365caa6199e0bff4b57501854d10e19449) |
-| profile | [`profile`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/tree/profile) | [`9276867`](https://github.com/RavinduRathnayaka/LiveThreatMap-dashboard/commit/92768678f8675190f330cee6039479948e6b0ff2) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| LiveThreatMap-2 | [`LiveThreatMap-2`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/tree/LiveThreatMap-2) | [`77e9cf3`](https://github.com/RavinduRathnayaka/LiveThreatMap-dashboard/commit/77e9cf365caa6199e0bff4b57501854d10e19449) | [`HARDENING.md`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/blob/LiveThreatMap-2/HARDENING.md) |
+| profile | [`profile`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/tree/profile) | [`9276867`](https://github.com/RavinduRathnayaka/LiveThreatMap-dashboard/commit/92768678f8675190f330cee6039479948e6b0ff2) | [`HARDENING.md`](https://github.com/chainguard-actions/RavinduRathnayaka-LiveThreatMap-dashboard/blob/profile/HARDENING.md) |
 
 ## Privacy
 
