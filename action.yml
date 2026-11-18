@@ -1,6 +1,7 @@
 name: 'Live Threat Map Generator'
 description: 'Generates and commits a dynamic SVG threat map using real-time data from Shodan.'
 author: 'RavinduRathnayaka'
+
 inputs:
   SHODAN_API_KEY:
     description: 'Your Shodan API key. This is required.'
@@ -21,6 +22,7 @@ inputs:
     description: 'The path to your custom background map.svg file.'
     required: false
     default: 'map.svg'
+
 runs:
   using: "composite"
   steps:
@@ -45,18 +47,20 @@ runs:
       uses: chainguard-actions/actions-setup-python@ace3254bb5011efbd0650a7120a0441ebd1f9400 # v5
       with:
         python-version: '3.10'
+
     - name: Install Python dependencies
       shell: bash
       run: |
         pip install requests shodan
+
     - name: Run threat map generator script
       shell: bash
-      # Use github.action_path to find the script within the action's repository
+      # Use GITHUB_ACTION_PATH to find the script within the action's repository
       env:
-        ACTION_PATH: ${{ github.action_path }}
         SHODAN_API_KEY: ${{ inputs.SHODAN_API_KEY }}
         OUTPUT_SVG_FILENAME: ${{ inputs.OUTPUT_FILE }}
-      run: python "$ACTION_PATH/generate_threat_map.py"
+      run: python "$GITHUB_ACTION_PATH/generate_threat_map.py"
+
     - name: Commit and push the updated map
       shell: bash
       env:
